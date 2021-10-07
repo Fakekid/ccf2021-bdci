@@ -249,10 +249,8 @@ class BertForTokenClassification(BertPreTrainedModel):
         self.num_labels = config.num_labels
 
         self.bert = BertModel(config, add_pooling_layer=False)
-        classifier_dropout = (
-            config.classifier_dropout if config.classifier_dropout is not None else config.hidden_dropout_prob
-        )
-        self.dropout = nn.Dropout(classifier_dropout)
+
+        self.dropout = nn.Dropout(config.hidden_dropout_prob)
         self.classifier = nn.Linear(config.hidden_size, config.num_labels)
 
         # 转移矩阵的参数初始化，transitions[i,j]代表的是从第j个tag转移到第i个tag的转移分数
@@ -342,7 +340,8 @@ class BertForTokenClassification(BertPreTrainedModel):
                 active_loss = attention_mask.view(-1) == 1
                 active_logits = logits.view(-1, self.num_labels)
                 active_labels = torch.where(
-                    active_loss, labels.view(-1), torch.tensor(loss_fct.ignore_index).type_as(labels)
+                    # active_loss, labels.view(-1), torch.tensor(loss_fct.ignore_index).type_as(labels)
+                    active_loss, labels.view(-1), torch.tensor(0).type_as(labels)
                 )
                 loss = loss_fct(active_logits, active_labels)
             else:
