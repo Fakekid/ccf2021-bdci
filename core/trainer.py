@@ -49,6 +49,7 @@ class FinetuneTrainer:
         self.kfold = 1
         self.epoch = 10
         for k, v in kwargs.items():
+            print(f'设置 {k}={v}')
             exec(f'self.{k} = {v}')
 
     def train(self, ptm_name, num_labels, data, x_col, y_col, output_path, batch_size=128, model_type='cls',
@@ -59,8 +60,8 @@ class FinetuneTrainer:
         """
         kfold = self.kfold
         epoch = self.epoch
+        print('数据样例')
         print(data.head())
-        print(x_col, y_col)
         gkf = StratifiedKFold(n_splits=kfold).split(X=data['input_ids'].fillna(0),
                                                     y=np.array(list(range(len(data)))) // 100)
 

@@ -69,8 +69,8 @@ def main():
         print('\n>> start pgd training ...')
 
     ft = FinetuneTrainer(epoch=config['num_epochs'], kfold=config['kfold'])
-    ft.train(config['model_path'], 10, dataset, x_col='text', y_col='class', output_path=config['output_path'],
-             batch_size=config['batch_size'], model_type='cls', learning_rate=2e-5)
+    ft.train(config['model_path'], config['num_labels'], dataset, x_col='text', y_col='class',
+             output_path=config['output_path'], batch_size=config['batch_size'], model_type='cls', learning_rate=2e-5)
 
     localtime_end = time.asctime(time.localtime(time.time()))
     print("\n>> program end at:{}".format(localtime_end))
