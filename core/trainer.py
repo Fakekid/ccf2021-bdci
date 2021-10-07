@@ -178,10 +178,10 @@ class FinetuneTrainer:
                     cur_avg_loss = 0.0
 
                     if global_acc < acc:
-                        output_path = output_path + f'_fold{fold}'
-                        if not os.path.exists(output_path):
-                            os.mkdir(output_path)
-                        model_save_path = os.path.join(output_path, 'finetune_model')
+                        output_path_ = output_path + f'_fold{fold}'
+                        if not os.path.exists(output_path_):
+                            os.mkdir(output_path_)
+                        model_save_path = os.path.join(output_path_, 'finetune_model')
                         model_to_save = model.module if hasattr(model, 'module') else model
 
                         model_to_save.save_pretrained(model_save_path)
