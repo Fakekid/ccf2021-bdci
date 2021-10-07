@@ -35,7 +35,7 @@ def main():
         'use_swa': True,
         'tokenizer_fast': False,
         'task': 'cls',
-        'batch_size': 128,
+        'batch_size': 64,
         'num_epochs': 5,
         'max_seq_len': 256,
         'kfold': 5,
