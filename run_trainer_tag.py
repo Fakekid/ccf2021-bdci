@@ -48,7 +48,7 @@ def main():
         'tokenizer_fast': False,
         'task': 'tag',
         'batch_size': 64,
-        'num_epochs': 64,
+        'num_epochs': 5,
         'max_seq_len': 256,
         'kfold': 5,
         'learning_rate': 2e-5,

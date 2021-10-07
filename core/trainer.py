@@ -47,7 +47,7 @@ class FinetuneTrainer:
 
     def __init__(self, **kwargs):
         self.kfold = 1
-        self.epoch = 100
+        self.epoch = 10
         for k, v in kwargs.items():
             exec(f'self.{k} = {v}')
 
@@ -89,7 +89,7 @@ class FinetuneTrainer:
                                                    weight_decay=weight_decay, warmup_ratio=warmup_ratio)
             model.to(device)
 
-            total_loss, cur_avg_loss = 0.0, 0.0
+            total_loss = 0.0
             global_steps = 0
             global_acc = 0
             bar = tqdm(range(1, epoch + 1))
@@ -110,7 +110,7 @@ class FinetuneTrainer:
                     loss.backward()
 
                     total_loss += loss.item()
-                    cur_avg_loss += loss.item()
+                    # cur_avg_loss += loss.item()
 
                     optimizer.step()
 
@@ -129,62 +129,60 @@ class FinetuneTrainer:
                     bar.set_description('step:{} acc:{} loss:{} lr:{}'.format(
                         global_steps, round(acc.item(), 4), round(loss.item(), 4), round(scheduler.get_lr()[0], 7)))
 
-                if e % 4 == 0:
-                    labels = None
-                    outputs = None
-                    for k, (src_batch, tgt_batch, seg_batch, mask_batch) \
-                            in enumerate(batch_loader(batch_size, src_v, tgt_v, seg_v, mask_v)):
+                # 每个epoch结束进行验证集评估并保存模型
+                labels = None
+                outputs = None
+                for k, (src_batch, tgt_batch, seg_batch, mask_batch) \
+                        in enumerate(batch_loader(batch_size, src_v, tgt_v, seg_v, mask_v)):
 
-                        src_batch = src_batch.to(device)
-                        tgt_batch = tgt_batch.to(device)
-                        seg_batch = seg_batch.to(device)
-                        mask_batch = mask_batch.to(device)
+                    src_batch = src_batch.to(device)
+                    tgt_batch = tgt_batch.to(device)
+                    seg_batch = seg_batch.to(device)
+                    mask_batch = mask_batch.to(device)
 
-                        output = model(input_ids=src_batch, labels=tgt_batch,
-                                       token_type_ids=seg_batch, attention_mask=mask_batch)
+                    output = model(input_ids=src_batch, labels=tgt_batch,
+                                   token_type_ids=seg_batch, attention_mask=mask_batch)
 
-                        output = output[1].cpu().detach().numpy()
-                        tgt_batch = tgt_batch.cpu().detach().numpy()
+                    output = output[1].cpu().detach().numpy()
+                    tgt_batch = tgt_batch.cpu().detach().numpy()
 
-                        output = np.argmax(output, axis=-1)
-                        if labels is None:
-                            labels = tgt_batch
-                            outputs = output
-                        else:
-                            labels = np.concatenate([labels, tgt_batch], axis=0)
-                            outputs = np.concatenate([outputs, output], axis=0)
+                    output = np.argmax(output, axis=-1)
+                    if labels is None:
+                        labels = tgt_batch
+                        outputs = output
+                    else:
+                        labels = np.concatenate([labels, tgt_batch], axis=0)
+                        outputs = np.concatenate([outputs, output], axis=0)
 
-                    labels = np.reshape(labels, [-1])
-                    outputs = np.reshape(outputs, [-1])
+                labels = np.reshape(labels, [-1])
+                outputs = np.reshape(outputs, [-1])
 
-                    if model_type == 'tag':
-                        used_index = labels > 0
-                        labels = labels[used_index]
-                        outputs = outputs[used_index]
+                if model_type == 'tag':
+                    used_index = labels > 0
+                    labels = labels[used_index]
+                    outputs = outputs[used_index]
 
-                    met = multi_cls_metrics(labels, outputs, need_sparse=False, num_labels=num_labels)
-                    acc = met['acc']
+                met = multi_cls_metrics(labels, outputs, need_sparse=False, num_labels=num_labels)
+                acc = met['acc']
 
-                    table = PrettyTable(['global_steps',
-                                         'loss',
-                                         'lr',
-                                         'acc'])
-                    table.add_row([global_steps + 1,
-                                   total_loss / (global_steps + 1),
-                                   scheduler.get_lr()[0],
-                                   round(acc, 4)])
-                    print(table)
+                table = PrettyTable(['global_steps',
+                                     'loss',
+                                     'lr',
+                                     'acc'])
+                table.add_row([global_steps + 1,
+                               total_loss / (global_steps + 1),
+                               scheduler.get_lr()[0],
+                               round(acc, 4)])
+                print(table)
 
-                    cur_avg_loss = 0.0
+                if global_acc < acc:
+                    output_path_ = output_path + f'_fold{fold}'
+                    if not os.path.exists(output_path_):
+                        os.mkdir(output_path_)
+                    model_save_path = os.path.join(output_path_, 'finetune_model')
+                    model_to_save = model.module if hasattr(model, 'module') else model
 
-                    if global_acc < acc:
-                        output_path_ = output_path + f'_fold{fold}'
-                        if not os.path.exists(output_path_):
-                            os.mkdir(output_path_)
-                        model_save_path = os.path.join(output_path_, 'finetune_model')
-                        model_to_save = model.module if hasattr(model, 'module') else model
-
-                        model_to_save.save_pretrained(model_save_path)
+                    model_to_save.save_pretrained(model_save_path)
 
 
 if __name__ == '__main__':
