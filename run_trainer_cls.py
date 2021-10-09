@@ -35,7 +35,7 @@ def main():
         'use_swa': True,
         'tokenizer_fast': False,
         'task': 'cls',
-        'batch_size': 64,
+        'batch_size': 32,
         'num_epochs': 5,
         'max_seq_len': 256,
         'kfold': 5,
@@ -45,7 +45,7 @@ def main():
         'adv_k': 3,
         'emb_name': 'word_embeddings.',
         'adv': 'pgd',
-        'warmup_ratio': 0.05,
+        'warmup_ratio': 0.1,
         'weight_decay': 0.01,
         'device': 'cuda',
         'logging_step': 100,
@@ -69,7 +69,7 @@ def main():
         print('\n>> start pgd training ...')
 
     ft = FinetuneTrainer(epoch=config['num_epochs'], kfold=config['kfold'])
-    ft.train(config['model_path'], config['num_labels'], dataset, x_col='text', y_col='class',
+    ft.train(config['model_path'], config['num_labels'], dataset,
              output_path=config['output_path'], batch_size=config['batch_size'], model_type='cls', learning_rate=2e-5)
 
     localtime_end = time.asctime(time.localtime(time.time()))

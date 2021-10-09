@@ -52,7 +52,7 @@ class FinetuneTrainer:
             print(f'设置 {k}={v}')
             exec(f'self.{k} = {v}')
 
-    def train(self, ptm_name, num_labels, data, x_col, y_col, output_path, batch_size=128, model_type='cls',
+    def train(self, ptm_name, num_labels, data, output_path, batch_size=128, model_type='cls',
               device='cuda',
               weight_decay=0.01, learning_rate=1e-5, warmup_ratio=0.1):
         """
@@ -113,7 +113,6 @@ class FinetuneTrainer:
                     total_loss += loss.item()
                     # cur_avg_loss += loss.item()
 
-                    optimizer.step()
 
                     scheduler.step()
 

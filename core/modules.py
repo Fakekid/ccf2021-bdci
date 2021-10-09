@@ -168,7 +168,7 @@ class BertForSequenceClassification(BertPreTrainedModel):
         self.num_labels = config.num_labels
 
         self.bert = BertModel(config)
-        self.dropout = nn.Dropout(config.hidden_dropout_prob)
+        self.dropout = nn.Dropout(0.2)
         self.classifier = nn.Linear(config.hidden_size, config.num_labels)
 
         self.init_weights()
@@ -220,7 +220,7 @@ class BertForSequenceClassification(BertPreTrainedModel):
         if labels is not None:
             if not label_balance:
                 # 添加label-smoothing
-                loss_fct = LabelSmoothingLoss(smoothing=0.01)
+                loss_fct = LabelSmoothingLoss(smoothing=0.05)
                 loss = loss_fct(logits.view(-1, self.num_labels), labels.view(-1))
             else:
                 # 添加focal-loss
@@ -250,7 +250,7 @@ class BertForTokenClassification(BertPreTrainedModel):
 
         self.bert = BertModel(config, add_pooling_layer=False)
 
-        self.dropout = nn.Dropout(config.hidden_dropout_prob)
+        self.dropout = nn.Dropout(0.2)
         self.classifier = nn.Linear(config.hidden_size, config.num_labels)
 
         # 转移矩阵的参数初始化，transitions[i,j]代表的是从第j个tag转移到第i个tag的转移分数
@@ -335,7 +335,8 @@ class BertForTokenClassification(BertPreTrainedModel):
 
         loss = None
         if labels is not None:
-            loss_fct = LabelSmoothingLoss()
+            # loss_fct = LabelSmoothingLoss()
+            loss_fct = nn.CrossEntropyLoss()
             if attention_mask is not None:
                 active_loss = attention_mask.view(-1) == 1
                 active_logits = logits.view(-1, self.num_labels)
