@@ -8,7 +8,7 @@ from torch.backends import cudnn
 from sklearn.model_selection import StratifiedKFold
 from tqdm import tqdm
 from prettytable import PrettyTable
-from core.modules import BertForSequenceClassification, BertForTokenClassification
+from core.modules import BertForSequenceClassification, BertForTokenClassification, FGM, PGD
 from core.optimizer import WarmupLinearSchedule
 from core.utils import batch_loader
 from core.metrics import multi_cls_metrics
@@ -53,7 +53,7 @@ class FinetuneTrainer:
             exec(f'self.{k} = {v}')
 
     def train(self, ptm_name, num_labels, data, output_path, batch_size=128, model_type='cls',
-              device='cuda',
+              adv=None, adv_params=None, device='cuda',
               weight_decay=0.01, learning_rate=1e-5, warmup_ratio=0.1):
         """
         训练模型
@@ -113,6 +113,32 @@ class FinetuneTrainer:
                     total_loss += loss.item()
                     # cur_avg_loss += loss.item()
 
+                    if adv == 'fgm':
+                        fgm = FGM(model)
+                        fgm.attack()
+                        adv_loss = model(input_ids=src_batch, labels=tgt_batch,
+                                         token_type_ids=seg_batch, attention_mask=mask_batch)[0]
+                        adv_loss.backward()
+                        fgm.restore()
+
+                    if adv == 'pgd':
+                        pgd = PGD(model, **adv_params)
+                        pgd.backup_grad()
+
+                        K = adv_params['adv_k']
+                        for t in range(K):
+                            pgd.attack(is_first_attack=(t == 0))
+                            if t != K - 1:
+                                model.zero_grad()  # 在K次攻击中，pgd里已经记录下了梯度，故model的梯度可直接设为0
+                            else:
+                                pgd.restore_grad()  # 在K次攻击后，用pgd里的梯度重置model的梯度，完成K步梯度对抗
+
+                            adv_loss = model(input_ids=src_batch, labels=tgt_batch,
+                                             token_type_ids=seg_batch, attention_mask=mask_batch)[0]
+                            adv_loss.backward()
+                        pgd.restore()
+
+                    optimizer.step()
 
                     scheduler.step()
 
