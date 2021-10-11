@@ -126,6 +126,7 @@ class FinetuneTrainer:
 
                     optimizer.step()
                     scheduler.step()
+                    model.zero_grad()
 
                     global_steps += 1
 
