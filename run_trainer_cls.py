@@ -23,34 +23,9 @@ def build_tokenizer(config):
 
 
 def main():
-    config = {
-        'num_labels': 3,
-        'use_model': 'bert',
-        'train_data_path': 'data/data.csv',
-        'dev_data_path': 'data/test.csv',
-        'output_path': 'output_model_cls',
-        # 'model_path': '/chj/dev/lianxiaolei/model/bert-base-chinese',  # your pretrain model path
-        'model_path': '/chj/dev/lianxiaolei/bert_pretrain/mlm_model_prod_opin',  # your pretrain model path
-        'shuffle_way': '',
-        'use_swa': True,
-        'tokenizer_fast': False,
-        'task': 'cls',
-        'batch_size': 32,
-        'num_epochs': 5,
-        'max_seq_len': 256,
-        'kfold': 5,
-        'learning_rate': 2e-5,
-        'alpha': 0.3,
-        'epsilon': 1.0,
-        'adv_k': 3,
-        'emb_name': 'word_embeddings.',
-        'adv': 'pgd',
-        'warmup_ratio': 0.1,
-        'weight_decay': 0.01,
-        'device': 'cuda',
-        'logging_step': 100,
-        'seed': 2022,
-    }
+    with open('conf_cls.json', 'r', encoding='utf8') as fin:
+        c = fin.readlines()
+    config = eval(''.join(c))
 
     warnings.filterwarnings('ignore')
     localtime_start = time.asctime(time.localtime(time.time()))
