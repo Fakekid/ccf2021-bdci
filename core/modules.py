@@ -220,7 +220,7 @@ class BertForSequenceClassification(BertPreTrainedModel):
         if labels is not None:
             if not label_balance:
                 # 添加label-smoothing
-                loss_fct = LabelSmoothingLoss(smoothing=0.05)
+                loss_fct = LabelSmoothingLoss(smoothing=0.01)
                 loss = loss_fct(logits.view(-1, self.num_labels), labels.view(-1))
             else:
                 # 添加focal-loss

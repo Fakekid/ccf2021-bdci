@@ -138,8 +138,8 @@ class FinetuneTrainer:
                         acc = acc.type(torch.float)
                         acc = torch.sum(acc * mask_batch)
                         acc = acc / torch.sum(mask_batch)
-                    bar.set_description('step:{} loss:{} lr:{}'.format(
-                        global_steps, round(loss.item(), 4), round(scheduler.get_lr()[0], 7)))
+                    bar.set_description('step:{} acc:{} loss:{} lr:{}'.format(
+                        global_steps, round(acc.item(), 4), round(loss.item(), 4), round(scheduler.get_lr()[0], 7)))
 
             model_save_path = os.path.join(output_path, 'finetune_model')
             model_to_save = model.module if hasattr(model, 'module') else model
