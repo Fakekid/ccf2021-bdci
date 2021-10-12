@@ -23,7 +23,7 @@ def build_tokenizer(config):
 
 
 def main():
-    with open('conf_cls.json', 'r', encoding='utf8') as fin:
+    with open('conf_cls.txt', 'r', encoding='utf8') as fin:
         c = fin.readlines()
     config = eval(''.join(c))
 

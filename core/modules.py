@@ -185,7 +185,6 @@ class BertForSequenceClassification(BertPreTrainedModel):
             output_attentions=None,
             output_hidden_states=None,
             return_dict=None,
-            label_balance=False,
             alpha=0.25,
             gamma=2,
     ):
@@ -218,17 +217,17 @@ class BertForSequenceClassification(BertPreTrainedModel):
         loss = None
 
         if labels is not None:
-            if not label_balance:
-                # 添加label-smoothing
-                loss_fct = LabelSmoothingLoss(smoothing=0.01)
-                loss = loss_fct(logits.view(-1, self.num_labels), labels.view(-1))
-            else:
-                # 添加focal-loss
-                if alpha is None:
-                    loss_fct = FocalLoss(self.num_labels)
-                else:
-                    loss_fct = FocalLoss(self.num_labels, alpha=alpha, gamma=gamma)
-                loss = loss_fct(logits.view(-1, self.num_labels), labels.view(-1))
+
+            # 添加label-smoothing
+            loss_fct = LabelSmoothingLoss(smoothing=0.01)
+            loss = loss_fct(logits.view(-1, self.num_labels), labels.view(-1))
+
+            # 添加focal-loss
+            # if alpha is None:
+            #     loss_fct = FocalLoss(self.num_labels)
+            # else:
+            #     loss_fct = FocalLoss(self.num_labels, alpha=alpha, gamma=gamma)
+            # loss = loss_fct(logits.view(-1, self.num_labels), labels.view(-1))
 
         if not return_dict:
             output = (logits,) + outputs[2:]
@@ -250,7 +249,7 @@ class BertForTokenClassification(BertPreTrainedModel):
 
         self.bert = BertModel(config, add_pooling_layer=False)
 
-        self.dropout = nn.Dropout(0.2)
+        self.dropout = nn.Dropout(config.hidden_dropout_prob)
         self.classifier = nn.Linear(config.hidden_size, config.num_labels)
 
         # 转移矩阵的参数初始化，transitions[i,j]代表的是从第j个tag转移到第i个tag的转移分数

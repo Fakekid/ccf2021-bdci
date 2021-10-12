@@ -68,18 +68,16 @@ def read_dataset(config, tokenizer):
     return dataset
 
 
-def predict(dataset, config):
+def predict(dataset, config, is_cv=False):
     predict_logits = []
 
     src = torch.LongTensor([sample[0] for sample in dataset])
     seg = torch.LongTensor([sample[1] for sample in dataset])
     mask = torch.LongTensor([sample[2] for sample in dataset])
 
-    for fold in tqdm(range(config['kfold'])):
-        torch.cuda.empty_cache()
-        print('load model from {}'.format(config['load_model_path'] + f'_fold{fold}'))
+    if not is_cv:
         model = BertForTokenClassification.from_pretrained(
-            os.path.join(config['load_model_path'] + f'_fold{fold}', 'finetune_model'))
+            os.path.join(config['load_model_path'], 'finetune_model'))
         model.to(config['device'])
         model.eval()
 
@@ -103,12 +101,45 @@ def predict(dataset, config):
                 tags = tag
             else:
                 tags = np.concatenate([tags, tag], axis=0)
+        predict_logits = tags
+    else:
+        for fold in tqdm(range(config['kfold'])):
+            torch.cuda.empty_cache()
+            print('load model from {}'.format(config['load_model_path'] + f'_fold{fold}'))
+            model = BertForTokenClassification.from_pretrained(
+                os.path.join(config['load_model_path'] + f'_fold{fold}', 'finetune_model'))
+            model.to(config['device'])
+            model.eval()
 
-        # tags = np.array(tags)
-        predict_logits.append(tags)
+            tags = None
+            for i, (src_batch, seg_batch, mask_batch) in \
+                    enumerate(batch_loader(config, src, seg, mask)):
+                src_batch = src_batch.to(config['device'])
+                seg_batch = seg_batch.to(config['device'])
+                mask_batch = mask_batch.to(config['device'])
+                with torch.no_grad():
+                    output = model(input_ids=src_batch, token_type_ids=seg_batch, attention_mask=mask_batch)
+
+                logits = output[0]
+                tag = logits
+
+                tag = torch.softmax(tag, -1)
+
+                tag = tag.cpu().numpy()
+
+                if tags is None:
+                    tags = tag
+                else:
+                    tags = np.concatenate([tags, tag], axis=0)
+
+            # tags = np.array(tags)
+            predict_logits.append(tags)
 
     predict_logits = np.array(predict_logits)
-    predict_logits = np.mean(predict_logits, axis=0)
+
+    if predict_logits.ndim == 4:
+        predict_logits = np.mean(predict_logits, axis=0)
+
     tags = np.argmax(np.array(predict_logits), axis=-1)
 
     name2id = {'B-COMMENTS_N': 6,
@@ -127,7 +158,6 @@ def predict(dataset, config):
     preds = []
     for i in range(len(tags)):
         seq = tags[i]
-
         if i < 5:
             print([seq[j] for j in range(len(seq)) if mask[i, j] == 1])
 

@@ -68,18 +68,16 @@ def read_dataset(config, tokenizer):
     return dataset
 
 
-def predict(dataset, config):
+def predict(dataset, config, is_cv=False):
     predict_logits = []
 
     src = torch.LongTensor([sample[0] for sample in dataset])
     seg = torch.LongTensor([sample[1] for sample in dataset])
     mask = torch.LongTensor([sample[2] for sample in dataset])
 
-    for fold in tqdm(range(config['kfold'])):
-        torch.cuda.empty_cache()
-        print('load model from {}'.format(config['load_model_path'] + f'_fold{fold}'))
+    if not is_cv:
         model = BertForSequenceClassification.from_pretrained(
-            os.path.join(config['load_model_path'] + f'_fold{fold}', 'finetune_model'))
+            os.path.join(config['load_model_path'], 'finetune_model'))
         model.to(config['device'])
         model.eval()
 
@@ -93,18 +91,54 @@ def predict(dataset, config):
                 output = model(input_ids=src_batch, token_type_ids=seg_batch, attention_mask=mask_batch)
 
             logits = output[0]
-
+            logits = torch.softmax(logits, dim=-1)
             logits = logits.cpu().numpy()
 
             if cls is None:
                 cls = logits
             else:
                 cls = np.concatenate([cls, logits], axis=0)
+        predict_logits = cls
+    else:
 
-        predict_logits.append(cls)
+        for fold in tqdm(range(config['kfold'])):
+            torch.cuda.empty_cache()
+            print('load model from {}'.format(config['load_model_path'] + f'_fold{fold}'))
+            model = BertForSequenceClassification.from_pretrained(
+                os.path.join(config['load_model_path'] + f'_fold{fold}', 'finetune_model'))
+            model.to(config['device'])
+            model.eval()
+
+            cls = None
+            for i, (src_batch, seg_batch, mask_batch) in \
+                    enumerate(batch_loader(config, src, seg, mask)):
+                src_batch = src_batch.to(config['device'])
+                seg_batch = seg_batch.to(config['device'])
+                mask_batch = mask_batch.to(config['device'])
+                with torch.no_grad():
+                    output = model(input_ids=src_batch, token_type_ids=seg_batch, attention_mask=mask_batch)
+
+                logits = output[0]
+
+                logits = logits.cpu().numpy()
+
+                if cls is None:
+                    cls = logits
+                else:
+                    cls = np.concatenate([cls, logits], axis=0)
+
+            predict_logits.append(cls)
 
     predict_logits = np.array(predict_logits)
-    predict_logits = np.mean(predict_logits, axis=0)
+
+    if predict_logits.ndim == 3:
+        predict_logits = np.mean(predict_logits, axis=0)
+
+    # weight = np.array([3.23984015, 4.25029316, 1.37903608])
+    # predict_logits = predict_logits * weight
+
+    np.save('pred_logits', predict_logits)
+
     cls = np.argmax(np.array(predict_logits), axis=-1)
 
     id_ = np.array(list(range(len(cls))))
@@ -122,12 +156,13 @@ def main():
         'vocab_path': '',
         'init_model_path': '',
         'data_path': 'data/test_public.csv',
+        # 'data_path': 'data/data.csv',
         'load_model_path': 'output_model_cls',
         'output_txt_path': './',
         'output_txt_name': 'predict_cls.csv',
         'submit_path': 'result.txt',
-        'batch_size': 128,
-        'max_seq_len': 256,
+        'batch_size': 256,
+        'max_seq_len': 128,
         'device': 'cuda',
         'kfold': 5
     }
