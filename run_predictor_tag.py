@@ -178,8 +178,8 @@ def main():
         'load_model_path': 'output_model_tag',
         'output_txt_path': './',
         'output_txt_name': 'predict_tag.csv',
-        'batch_size': 64,
-        'max_seq_len': 256,
+        'batch_size': 32,
+        'max_seq_len': 512,
         'device': 'cuda',
         'kfold': 5
     }

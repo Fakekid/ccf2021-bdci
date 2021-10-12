@@ -12,6 +12,7 @@ from core.modules import BertForSequenceClassification, BertForTokenClassificati
 from core.optimizer import WarmupLinearSchedule
 from core.utils import batch_loader
 from core.metrics import multi_cls_metrics
+from sklearn.utils import shuffle
 
 
 def build_model(ptm_name, num_labels, type='cls'):
@@ -63,24 +64,24 @@ class FinetuneTrainer:
         print('数据样例')
         print(data.head())
         if kfold <= 1:
-            src = torch.LongTensor(data['input_ids'].values.tolist())
-            seg = torch.LongTensor(data['segment_ids'].values.tolist())
-            mask = torch.LongTensor(data['input_mask'].values.tolist())
-            tgt = torch.LongTensor(data['label'].values.tolist())
-
-            train_num = len(src)
-            train_steps = int(train_num * epoch / batch_size) + 1
-
             model = build_model(ptm_name, num_labels, type=model_type)
-            optimizer, scheduler = build_optimizer(model, train_steps, learning_rate=learning_rate,
-                                                   weight_decay=weight_decay, warmup_ratio=warmup_ratio)
             model.to(device)
 
             total_loss = 0.0
             global_steps = 0
-            global_acc = 0
             bar = tqdm(range(1, epoch + 1))
             for e in bar:
+                data = shuffle(data)
+                src = torch.LongTensor(data['input_ids'].values.tolist())
+                seg = torch.LongTensor(data['segment_ids'].values.tolist())
+                mask = torch.LongTensor(data['input_mask'].values.tolist())
+                tgt = torch.LongTensor(data['label'].values.tolist())
+
+                train_num = len(src)
+                train_steps = int(train_num * epoch / batch_size) + 1
+
+                optimizer, scheduler = build_optimizer(model, train_steps, learning_rate=learning_rate,
+                                                       weight_decay=weight_decay, warmup_ratio=warmup_ratio)
 
                 for i, (src_batch, tgt_batch, seg_batch, mask_batch) \
                         in enumerate(batch_loader(batch_size, src, tgt, seg, mask)):
@@ -153,26 +154,10 @@ class FinetuneTrainer:
             for fold, (train_idx, valid_idx) in enumerate(gkf):
                 cudnn.benchmark = True
                 print('=' * 40, 'fold: {}'.format(fold), '=' * 40)
-
-                src = torch.LongTensor(data.iloc[train_idx]['input_ids'].values.tolist())
-                seg = torch.LongTensor(data.iloc[train_idx]['segment_ids'].values.tolist())
-                mask = torch.LongTensor(data.iloc[train_idx]['input_mask'].values.tolist())
-                tgt = torch.LongTensor(data.iloc[train_idx]['label'].values.tolist())
-
-                src_v = torch.LongTensor(data.iloc[valid_idx]['input_ids'].values.tolist())
-                seg_v = torch.LongTensor(data.iloc[valid_idx]['segment_ids'].values.tolist())
-                mask_v = torch.LongTensor(data.iloc[valid_idx]['input_mask'].values.tolist())
-                tgt_v = torch.LongTensor(data.iloc[valid_idx]['label'].values.tolist())
-
                 # 释放显存占用
                 torch.cuda.empty_cache()
 
-                train_num = len(src)
-                train_steps = int(train_num * epoch / batch_size) + 1
-
                 model = build_model(ptm_name, num_labels, type=model_type)
-                optimizer, scheduler = build_optimizer(model, train_steps, learning_rate=learning_rate,
-                                                       weight_decay=weight_decay, warmup_ratio=warmup_ratio)
                 model.to(device)
 
                 total_loss = 0.0
@@ -180,6 +165,21 @@ class FinetuneTrainer:
                 global_acc = 0
                 bar = tqdm(range(1, epoch + 1))
                 for e in bar:
+                    src = torch.LongTensor(data.iloc[train_idx]['input_ids'].values.tolist())
+                    seg = torch.LongTensor(data.iloc[train_idx]['segment_ids'].values.tolist())
+                    mask = torch.LongTensor(data.iloc[train_idx]['input_mask'].values.tolist())
+                    tgt = torch.LongTensor(data.iloc[train_idx]['label'].values.tolist())
+
+                    src_v = torch.LongTensor(data.iloc[valid_idx]['input_ids'].values.tolist())
+                    seg_v = torch.LongTensor(data.iloc[valid_idx]['segment_ids'].values.tolist())
+                    mask_v = torch.LongTensor(data.iloc[valid_idx]['input_mask'].values.tolist())
+                    tgt_v = torch.LongTensor(data.iloc[valid_idx]['label'].values.tolist())
+
+                    train_num = len(src)
+                    train_steps = int(train_num * epoch / batch_size) + 1
+
+                    optimizer, scheduler = build_optimizer(model, train_steps, learning_rate=learning_rate,
+                                                           weight_decay=weight_decay, warmup_ratio=warmup_ratio)
 
                     for i, (src_batch, tgt_batch, seg_batch, mask_batch) \
                             in enumerate(batch_loader(batch_size, src, tgt, seg, mask)):

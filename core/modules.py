@@ -168,7 +168,7 @@ class BertForSequenceClassification(BertPreTrainedModel):
         self.num_labels = config.num_labels
 
         self.bert = BertModel(config)
-        self.dropout = nn.Dropout(0.2)
+        self.dropout = nn.Dropout(config.hidden_dropout_prob)
         self.classifier = nn.Linear(config.hidden_size, config.num_labels)
 
         self.init_weights()
@@ -217,10 +217,12 @@ class BertForSequenceClassification(BertPreTrainedModel):
         loss = None
 
         if labels is not None:
+            loss_fct = nn.CrossEntropyLoss()
+            loss = loss_fct(logits.view(-1, self.num_labels), labels.view(-1))
 
             # 添加label-smoothing
-            loss_fct = LabelSmoothingLoss(smoothing=0.01)
-            loss = loss_fct(logits.view(-1, self.num_labels), labels.view(-1))
+            # loss_fct = LabelSmoothingLoss(smoothing=0.1)
+            # loss = loss_fct(logits.view(-1, self.num_labels), labels.view(-1))
 
             # 添加focal-loss
             # if alpha is None:
