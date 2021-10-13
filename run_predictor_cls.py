@@ -11,18 +11,8 @@ import pandas as pd
 import torch
 import torch.nn as nn
 from transformers import BertTokenizer
-from transformers import BertForSequenceClassification, BertModel
+from transformers import BertForSequenceClassification
 from tqdm import tqdm
-
-
-def argmax(res):
-    k, tmp = 0, 0
-    for i in range(len(res)):
-        if res[i] > tmp:
-            tmp = res[i]
-            k = i
-
-    return k
 
 
 def batch_loader(config, src, seg, mask):
@@ -161,7 +151,7 @@ def main():
         'output_txt_path': './',
         'output_txt_name': 'predict_cls.csv',
         'submit_path': 'result.txt',
-        'batch_size': 256,
+        'batch_size': 128,
         'max_seq_len': 128,
         'device': 'cuda',
         'kfold': 5

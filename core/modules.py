@@ -168,7 +168,7 @@ class BertForSequenceClassification(BertPreTrainedModel):
         self.num_labels = config.num_labels
 
         self.bert = BertModel(config)
-        self.dropout = nn.Dropout(config.hidden_dropout_prob)
+        self.dropout = nn.Dropout(0.25)
         self.classifier = nn.Linear(config.hidden_size, config.num_labels)
 
         self.init_weights()
@@ -251,7 +251,7 @@ class BertForTokenClassification(BertPreTrainedModel):
 
         self.bert = BertModel(config, add_pooling_layer=False)
 
-        self.dropout = nn.Dropout(config.hidden_dropout_prob)
+        self.dropout = nn.Dropout(0.2)
         self.classifier = nn.Linear(config.hidden_size, config.num_labels)
 
         # 转移矩阵的参数初始化，transitions[i,j]代表的是从第j个tag转移到第i个tag的转移分数

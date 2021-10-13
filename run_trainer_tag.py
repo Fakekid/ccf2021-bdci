@@ -14,6 +14,7 @@ from core.utils import read_dataset
 
 def build_tokenizer(config):
     tokenizer_path = config['model_path'] + '/vocab.txt'
+    # tokenizer_path = config['model_path']
     if config['tokenizer_fast']:
         tokenizer = BertTokenizerFast.from_pretrained(tokenizer_path)
     else:
@@ -46,7 +47,8 @@ def main():
 
     ft = FinetuneTrainer(epoch=config['num_epochs'], kfold=config['kfold'])
     ft.train(config['model_path'], config['num_labels'], dataset,
-             output_path=config['output_path'], batch_size=config['batch_size'], model_type='tag', learning_rate=2e-5)
+             output_path=config['output_path'], batch_size=config['batch_size'], model_type='tag',
+             learning_rate=config['learning_rate'])
 
     localtime_end = time.asctime(time.localtime(time.time()))
     print("\n>> program end at:{}".format(localtime_end))

@@ -9,6 +9,7 @@ from sklearn.model_selection import StratifiedKFold
 from tqdm import tqdm
 from prettytable import PrettyTable
 from core.modules import BertForSequenceClassification, BertForTokenClassification, FGM, PGD
+# from transformers import BertForSequenceClassification, BertForTokenClassification
 from core.optimizer import WarmupLinearSchedule
 from core.utils import batch_loader
 from core.metrics import multi_cls_metrics
@@ -71,6 +72,7 @@ class FinetuneTrainer:
             global_steps = 0
             bar = tqdm(range(1, epoch + 1))
             for e in bar:
+                model.train()
                 data = shuffle(data)
                 src = torch.LongTensor(data['input_ids'].values.tolist())
                 seg = torch.LongTensor(data['segment_ids'].values.tolist())
@@ -94,42 +96,41 @@ class FinetuneTrainer:
                                    token_type_ids=seg_batch, attention_mask=mask_batch)
                     loss = output[0]
 
-                    optimizer.zero_grad()
+                    global_steps += 1
+
                     loss.backward()
 
-                    total_loss += loss.item()
                     # cur_avg_loss += loss.item()
 
-                    if adv == 'fgm':
-                        fgm = FGM(model)
-                        fgm.attack()
-                        adv_loss = model(input_ids=src_batch, labels=tgt_batch,
-                                         token_type_ids=seg_batch, attention_mask=mask_batch)[0]
-                        adv_loss.backward()
-                        fgm.restore()
-
-                    if adv == 'pgd':
-                        pgd = PGD(model, **adv_params)
-                        pgd.backup_grad()
-
-                        K = adv_params['adv_k']
-                        for t in range(K):
-                            pgd.attack(is_first_attack=(t == 0))
-                            if t != K - 1:
-                                model.zero_grad()  # 在K次攻击中，pgd里已经记录下了梯度，故model的梯度可直接设为0
-                            else:
-                                pgd.restore_grad()  # 在K次攻击后，用pgd里的梯度重置model的梯度，完成K步梯度对抗
-
-                            adv_loss = model(input_ids=src_batch, labels=tgt_batch,
-                                             token_type_ids=seg_batch, attention_mask=mask_batch)[0]
-                            adv_loss.backward()
-                        pgd.restore()
+                    # if adv == 'fgm':
+                    #     fgm = FGM(model)
+                    #     fgm.attack()
+                    #     adv_loss = model(input_ids=src_batch, labels=tgt_batch,
+                    #                      token_type_ids=seg_batch, attention_mask=mask_batch)[0]
+                    #     adv_loss.backward()
+                    #     fgm.restore()
+                    #
+                    # if adv == 'pgd':
+                    #     pgd = PGD(model, **adv_params)
+                    #     pgd.backup_grad()
+                    #
+                    #     K = adv_params['adv_k']
+                    #     for t in range(K):
+                    #         pgd.attack(is_first_attack=(t == 0))
+                    #         if t != K - 1:
+                    #             model.zero_grad()  # 在K次攻击中，pgd里已经记录下了梯度，故model的梯度可直接设为0
+                    #         else:
+                    #             pgd.restore_grad()  # 在K次攻击后，用pgd里的梯度重置model的梯度，完成K步梯度对抗
+                    #
+                    #         adv_loss = model(input_ids=src_batch, labels=tgt_batch,
+                    #                          token_type_ids=seg_batch, attention_mask=mask_batch)[0]
+                    #         adv_loss.backward()
+                    #     pgd.restore()
 
                     optimizer.step()
                     scheduler.step()
                     model.zero_grad()
-
-                    global_steps += 1
+                    optimizer.zero_grad()
 
                     acc = torch.argmax(torch.softmax(output[1], dim=-1), dim=-1) == tgt_batch
                     if model_type == 'cls':
@@ -198,33 +199,32 @@ class FinetuneTrainer:
                         total_loss += loss.item()
                         # cur_avg_loss += loss.item()
 
-                        if adv == 'fgm':
-                            fgm = FGM(model)
-                            fgm.attack()
-                            adv_loss = model(input_ids=src_batch, labels=tgt_batch,
-                                             token_type_ids=seg_batch, attention_mask=mask_batch)[0]
-                            adv_loss.backward()
-                            fgm.restore()
-
-                        if adv == 'pgd':
-                            pgd = PGD(model, **adv_params)
-                            pgd.backup_grad()
-
-                            K = adv_params['adv_k']
-                            for t in range(K):
-                                pgd.attack(is_first_attack=(t == 0))
-                                if t != K - 1:
-                                    model.zero_grad()  # 在K次攻击中，pgd里已经记录下了梯度，故model的梯度可直接设为0
-                                else:
-                                    pgd.restore_grad()  # 在K次攻击后，用pgd里的梯度重置model的梯度，完成K步梯度对抗
-
-                                adv_loss = model(input_ids=src_batch, labels=tgt_batch,
-                                                 token_type_ids=seg_batch, attention_mask=mask_batch)[0]
-                                adv_loss.backward()
-                            pgd.restore()
+                        # if adv == 'fgm':
+                        #     fgm = FGM(model)
+                        #     fgm.attack()
+                        #     adv_loss = model(input_ids=src_batch, labels=tgt_batch,
+                        #                      token_type_ids=seg_batch, attention_mask=mask_batch)[0]
+                        #     adv_loss.backward()
+                        #     fgm.restore()
+                        #
+                        # if adv == 'pgd':
+                        #     pgd = PGD(model, **adv_params)
+                        #     pgd.backup_grad()
+                        #
+                        #     K = adv_params['adv_k']
+                        #     for t in range(K):
+                        #         pgd.attack(is_first_attack=(t == 0))
+                        #         if t != K - 1:
+                        #             model.zero_grad()  # 在K次攻击中，pgd里已经记录下了梯度，故model的梯度可直接设为0
+                        #         else:
+                        #             pgd.restore_grad()  # 在K次攻击后，用pgd里的梯度重置model的梯度，完成K步梯度对抗
+                        #
+                        #         adv_loss = model(input_ids=src_batch, labels=tgt_batch,
+                        #                          token_type_ids=seg_batch, attention_mask=mask_batch)[0]
+                        #         adv_loss.backward()
+                        #     pgd.restore()
 
                         optimizer.step()
-
                         scheduler.step()
 
                         global_steps += 1
