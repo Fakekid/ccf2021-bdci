@@ -48,7 +48,7 @@ def main():
         print('\n>> start pgd training ...')
 
     ft = FinetuneTrainer(epoch=config['num_epochs'], kfold=config['kfold'])
-    ft.train(config['model_path'], config['num_labels'], dataset,
+    ft.train(config['model_path'], config['num_labels'], dataset, loss_type=config['loss_type'],
              output_path=config['output_path'], batch_size=config['batch_size'], model_type='tag',
              learning_rate=config['learning_rate'])
 

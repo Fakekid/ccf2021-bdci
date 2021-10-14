@@ -185,8 +185,9 @@ class BertForSequenceClassification(BertPreTrainedModel):
             output_attentions=None,
             output_hidden_states=None,
             return_dict=None,
+            loss_type=None,
             alpha=0.25,
-            gamma=2,
+            gamma=2
     ):
         r"""
         labels (:obj:`torch.LongTensor` of shape :obj:`(batch_size,)`, `optional`):
@@ -217,19 +218,21 @@ class BertForSequenceClassification(BertPreTrainedModel):
         loss = None
 
         if labels is not None:
-            loss_fct = nn.CrossEntropyLoss()
-            loss = loss_fct(logits.view(-1, self.num_labels), labels.view(-1))
-
-            # 添加label-smoothing
-            # loss_fct = LabelSmoothingLoss(smoothing=0.1)
-            # loss = loss_fct(logits.view(-1, self.num_labels), labels.view(-1))
+            if loss_type == 'ls':
+                # 添加label-smoothing
+                loss_fct = LabelSmoothingLoss(smoothing=0.01)
+                loss = loss_fct(logits.view(-1, self.num_labels), labels.view(-1))
 
             # 添加focal-loss
-            # if alpha is None:
-            #     loss_fct = FocalLoss(self.num_labels)
-            # else:
-            #     loss_fct = FocalLoss(self.num_labels, alpha=alpha, gamma=gamma)
-            # loss = loss_fct(logits.view(-1, self.num_labels), labels.view(-1))
+            if loss_type == 'fl':
+                if alpha is None:
+                    loss_fct = FocalLoss(self.num_labels)
+                else:
+                    loss_fct = FocalLoss(self.num_labels, alpha=alpha, gamma=gamma)
+                loss = loss_fct(logits.view(-1, self.num_labels), labels.view(-1))
+            else:
+                loss_fct = nn.CrossEntropyLoss()
+                loss = loss_fct(logits.view(-1, self.num_labels), labels.view(-1))
 
         if not return_dict:
             output = (logits,) + outputs[2:]

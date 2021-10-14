@@ -54,7 +54,7 @@ class FinetuneTrainer:
             print(f'设置 {k}={v}')
             exec(f'self.{k} = {v}')
 
-    def train(self, ptm_name, num_labels, data, output_path, batch_size=128, model_type='cls',
+    def train(self, ptm_name, num_labels, data, output_path, batch_size=128, model_type='cls', loss_type=None,
               adv=None, adv_params=None, device='cuda',
               weight_decay=0.01, learning_rate=1e-5, warmup_ratio=0.1):
         """
@@ -93,7 +93,7 @@ class FinetuneTrainer:
                     mask_batch = mask_batch.to(device)
 
                     output = model(input_ids=src_batch, labels=tgt_batch,
-                                   token_type_ids=seg_batch, attention_mask=mask_batch)
+                                   token_type_ids=seg_batch, attention_mask=mask_batch, loss_type=loss_type)
                     loss = output[0]
 
                     global_steps += 1
