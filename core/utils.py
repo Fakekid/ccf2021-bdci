@@ -1,11 +1,16 @@
 # coding: utf8
 
+import os
 import random
 import numpy as np
 from tqdm import tqdm
 import torch
 import pandas as pd
 from sklearn.utils import shuffle
+from transformers import (
+    BertTokenizer,
+    BertTokenizerFast,
+)
 
 
 def seed_everything(seed):
@@ -83,3 +88,19 @@ def read_dataset(data_path, tokenizer, max_seq_len, task, x_col, y_col, return_l
     if return_len:
         return data, length
     return data
+
+
+def build_tokenizer(path):
+    if '/' in path:
+        tokenizer_path = os.path.join(path, 'vocab.txt')
+    else:
+        tokenizer_path = path
+    # tokenizer_path = config['model_path']
+    # if config['tokenizer_fast']:
+    #     tokenizer = BertTokenizerFast.from_pretrained(tokenizer_path)
+    # else:
+    #     tokenizer = BertTokenizer.from_pretrained(tokenizer_path)
+
+    tokenizer = BertTokenizer.from_pretrained(tokenizer_path)
+
+    return tokenizer

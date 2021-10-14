@@ -309,6 +309,7 @@ class BertForTokenClassification(BertPreTrainedModel):
             output_attentions=None,
             output_hidden_states=None,
             return_dict=None,
+            loss_type=None
     ):
         r"""
         labels (:obj:`torch.LongTensor` of shape :obj:`(batch_size, sequence_length)`, `optional`):
@@ -339,8 +340,13 @@ class BertForTokenClassification(BertPreTrainedModel):
 
         loss = None
         if labels is not None:
-            # loss_fct = LabelSmoothingLoss()
-            loss_fct = nn.CrossEntropyLoss()
+            if loss_type == 'ls':
+                loss_fct = LabelSmoothingLoss()
+            elif loss_type == 'fl':
+                loss_fct = FocalLoss()
+            else:
+                loss_fct = nn.CrossEntropyLoss()
+
             if attention_mask is not None:
                 active_loss = attention_mask.view(-1) == 1
                 active_logits = logits.view(-1, self.num_labels)

@@ -9,10 +9,9 @@ import warnings
 import numpy as np
 import pandas as pd
 import torch
-import torch.nn as nn
-from transformers import BertTokenizer
-from transformers import BertForSequenceClassification
+from core.modules import BertForSequenceClassification
 from tqdm import tqdm
+from core.utils import build_tokenizer
 
 
 def batch_loader(config, src, seg, mask):
@@ -151,9 +150,7 @@ def main():
     localtime_start = time.asctime(time.localtime(time.time()))
     print(">> program start at:{}".format(localtime_start))
 
-    config['vocab_path'] = '/chj/dev/lianxiaolei/model/bert-base-chinese' + '/vocab.txt'
-
-    tokenizer = BertTokenizer.from_pretrained(config['vocab_path'])
+    tokenizer = build_tokenizer(config['vocab_path'])
 
     print('读取数据集')
     test_set = read_dataset(config, tokenizer=tokenizer)
