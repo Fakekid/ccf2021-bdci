@@ -15,10 +15,12 @@ from core.utils import read_dataset
 def build_tokenizer(config):
     tokenizer_path = config['model_path'] + '/vocab.txt'
     # tokenizer_path = config['model_path']
-    if config['tokenizer_fast']:
-        tokenizer = BertTokenizerFast.from_pretrained(tokenizer_path)
-    else:
-        tokenizer = BertTokenizer.from_pretrained(tokenizer_path)
+    # if config['tokenizer_fast']:
+    #     tokenizer = BertTokenizerFast.from_pretrained(tokenizer_path)
+    # else:
+    #     tokenizer = BertTokenizer.from_pretrained(tokenizer_path)
+
+    tokenizer = BertTokenizer.from_pretrained(tokenizer_path)
 
     return tokenizer
 

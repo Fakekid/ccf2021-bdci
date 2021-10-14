@@ -171,18 +171,9 @@ def predict(dataset, config, is_cv=False):
 
 
 def main():
-    config = {
-        'vocab_path': '',
-        'init_model_path': '',
-        'data_path': 'data/test_public.csv',
-        'load_model_path': 'output_model_tag',
-        'output_txt_path': './',
-        'output_txt_name': 'predict_tag.csv',
-        'batch_size': 32,
-        'max_seq_len': 512,
-        'device': 'cuda',
-        'kfold': 5
-    }
+    with open('conf_tag_dev.txt', 'r', encoding='utf8') as fin:
+        c = fin.readlines()
+    config = eval(''.join(c))
 
     warnings.filterwarnings('ignore')
     start_time = time.time()

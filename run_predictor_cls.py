@@ -142,20 +142,9 @@ def predict(dataset, config, is_cv=False):
 
 
 def main():
-    config = {
-        'vocab_path': '',
-        'init_model_path': '',
-        'data_path': 'data/test_public.csv',
-        # 'data_path': 'data/data.csv',
-        'load_model_path': 'output_model_cls',
-        'output_txt_path': './',
-        'output_txt_name': 'predict_cls.csv',
-        'submit_path': 'result.txt',
-        'batch_size': 128,
-        'max_seq_len': 128,
-        'device': 'cuda',
-        'kfold': 5
-    }
+    with open('conf_cls_dev.txt', 'r', encoding='utf8') as fin:
+        c = fin.readlines()
+    config = eval(''.join(c))
 
     warnings.filterwarnings('ignore')
     start_time = time.time()
